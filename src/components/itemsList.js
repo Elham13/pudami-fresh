@@ -66,7 +66,7 @@ const itemsList = ({itemName, price, photo, buyLimit, id}) => {
     }
   }, [limit]);
 
-  useEffect(async() => {
+  useEffect(async() => { 
     console.log("Cart: ", cart);
   }, [cart]);
 

@@ -14,6 +14,7 @@ import Profile from '../screens/Profile';
 import Settings from '../screens/Settings';
 import ProfileSetting from '../screens/ProfileSetting';
 import ChangePassword from '../screens/ChangePassword';
+import SuccessPayment from '../screens/SuccessPayment';
 
 const Stack = createStackNavigator(); 
 
@@ -72,6 +73,19 @@ const HomeStack = () => {
                 component={ChangePassword}
                 options={({navigation}) => ({
                     headerTitle: () => <Header nav={navigation} title="Change Password" showNav={false} />,
+                    headerStyle: {backgroundColor: '#039646'},
+                    headerLeft: () => (
+                        <TouchableOpacity onPress={() => navigation.goBack()}>
+                          <FontAwesome5 name="angle-left" size={20} style={styles.icon} />
+                        </TouchableOpacity>
+                    ),
+                })}
+            />
+            <Stack.Screen 
+                name='SuccessPayment' 
+                component={SuccessPayment}
+                options={({navigation}) => ({
+                    headerTitle: () => <Header nav={navigation} title="Success Payment" showNav={false} />,
                     headerStyle: {backgroundColor: '#039646'},
                     headerLeft: () => (
                         <TouchableOpacity onPress={() => navigation.goBack()}>

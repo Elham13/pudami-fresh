@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import RazorpayCheckout from 'react-native-razorpay';
 import {TEST_KEY_ID, TEST_KEY_SECRET} from '../utils/razorpay'
 import razorpayRequest from '../redux/orders/razorpayRequestAction'
+import createOrder from '../redux/orders/createOrederAction'
 
 const windowWidth = Dimensions.get('window').width;
 
@@ -17,18 +18,8 @@ const Payment = ({nav}) => {
     const razorPayReducer = useSelector(state => state.razorpay)
     const {razorpayLoading, razorpayData, razorpayError} = razorPayReducer;
 
-    const [cod, setCOD] = useState(false);
-    const [billingAddress, setBillingAddress] = useState(false);
-    const [savedAddress, setSavedAddress] = useState('');
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [email, setEmail] = useState('');
-    const [landmark, setLandmark] = useState('');
-    const [city, setCity] = useState('');
-    const [country, setCountry] = useState('');
-    const [state, setState] = useState('');
-    const [pincode, setPincode] = useState('');
-    const [phoneNo, setPhoneNo] = useState('');
+    const [paymentMode, setPaymentMode] = useState('onlinePayment');
+    const [billingAddress, setBillingAddress] = useState("sameAsBilingAddress");
     const [fullOrderInfo, setFullOrderInfo] = useState({});
 
     const infoClickHandler = () => dispatch({ type: "SHOW_INFORMATION" })
@@ -46,19 +37,12 @@ const Payment = ({nav}) => {
         if(Object.keys(fullOrderInfo).length){
             const updatedOrderInfo = {
                 ...fullOrderInfo,
-                informationAddress: {
-                    contact: email,
-                    firstName: firstName,
-                    lastName: lastName,
-                    address: savedAddress,
-                    nearTo: landmark,
-                    city: city,
-                    state: state,
-                    pincode: pincode,
-                    country: country,
-                    phone: phoneNo,
-                }
+                paymentMethod: {
+                    payment: paymentMode,
+                    billingAddress: billingAddress
+                },
             }
+            setFullOrderInfo(updatedOrderInfo)
             try {
                 await AsyncStorage.setItem("OrderInfo", JSON.stringify(updatedOrderInfo))
             } catch (error) {
@@ -66,20 +50,18 @@ const Payment = ({nav}) => {
             }
         }
 
-        dispatch(razorpayRequest())
+        // dispatch(razorpayRequest())
         Alert.alert("Rdirecting to pyament", "You will be redirected to payment now!", [{text: "Okay", onPress:() => openRazorPay()}])
-        
     }
     
     const openRazorPay = () => {
-        // Payment
             const  options = {
                 image: 'https://i.imgur.com/3g7nmJC.png',
                 name: 'Fresh Vegitables', 
                 description: 'Happy shopping with Pudami Fresh',
-                amount: razorpayData.amount,
-                currency: razorpayData.amount.currency,
-                order_id: razorpayData.id,
+                amount: getTotal(fullOrderInfo.orderItems) * 100,
+                currency: 'INR',
+                // order_id: razorpayData.id,
                 key: TEST_KEY_ID,
                 prefill: {
                   email: 'wolverine.elham@gmail.com',
@@ -91,7 +73,11 @@ const Payment = ({nav}) => {
     
             RazorpayCheckout.open(options).then((data) => {
             // handle success
+            dispatch(createOrder(fullOrderInfo)) 
+            dispatch({type: 'EMPTY_CART'})
+            nav.navigate("SuccessPayment", {orderInfo: fullOrderInfo});
             alert(`Payment was successfull: ${data.razorpay_payment_id}`);
+
             }).catch((error) => {
             // handle failure
             alert(`Error: ${error.code} | ${error.description}`);
@@ -106,25 +92,24 @@ const Payment = ({nav}) => {
     useEffect(async() => {
         const orderInfo = await AsyncStorage.getItem("OrderInfo")
         if(orderInfo){
-            console.log(orderInfo);
+            console.log("Full: ",orderInfo);
             const orderInfo1 = JSON.parse(orderInfo)
             setFullOrderInfo(orderInfo1)
-            const add = orderInfo1.informationAddress
-            setSavedAddress(add.address)
-            setFirstName(add.firstName)
-            setLastName(add.lastName)
-            setEmail(add.contact)
-            setPhoneNo(add.phone)
-            setLandmark(add.nearTo)
-            setCity(add.city)
-            setState(add.state)
-            setPincode(add.pincode)
-            setCountry(add.country)
         }
+    }, [])
+
+    useEffect(() => {
+        console.log("Method: ", paymentMode)
+    }, [paymentMode])
+
+    useEffect(() => {
+        console.log("Object: ", fullOrderInfo)
     }, [])
 
     return (
         <View>
+            {Object.keys(fullOrderInfo).length > 0 && (
+                <>
             <View style={styles.information}>
                 <View style={styles.info1}>
                     <TouchableOpacity onPress={infoClickHandler}>
@@ -145,7 +130,7 @@ const Payment = ({nav}) => {
                             <Text style={styles.txtBtn}>Change</Text>
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.txt3}>{email}</Text>
+                    <Text style={styles.txt3}>{fullOrderInfo.informationAddress.contact}</Text>
                     <Divider style={styles.divider} />
                     <View style={styles.infoInner1}>
                         <Text style={styles.txt2}>Ship to</Text>
@@ -153,7 +138,7 @@ const Payment = ({nav}) => {
                             <Text style={styles.txtBtn}>Change</Text>
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.txt3}>{savedAddress}</Text>
+                    <Text style={styles.txt3}>{fullOrderInfo.informationAddress.address}</Text>
                     <Divider style={styles.divider} />
                     <View style={styles.infoInner1}>
                         <Text style={styles.txt2}>Method</Text>
@@ -165,10 +150,10 @@ const Payment = ({nav}) => {
                 <Text style={styles.txt2}>All transactions are secure and encrypted.</Text>
                 <View style={[styles.section, {padding: 0}]}>
                     <View style={styles.subsection}>
-                        <RadioButton.Group onValueChange={newValue => setCOD(newValue)} value={cod}>
+                        <RadioButton.Group onValueChange={newVal => setPaymentMode(newVal)} value={paymentMode}>
                             <View style={{paddingBottom: 4}}>
                                 <View style={styles.left}>
-                                    <RadioButton value={false} />
+                                    <RadioButton value="onlinePayment" />
                                     <Text style={styles.txt3}>Credit Card / Debit Card / Net Banking / UPI</Text>
                                 </View>
                                 <View style={styles.iconsWrapper}>
@@ -179,23 +164,23 @@ const Payment = ({nav}) => {
                                     <Text style={{fontSize: 8}}>and more...</Text>
                                 </View>
                             </View>
-                            {!cod ? (
+                            {paymentMode == "onlinePayment" && (
                                 <View style={styles.sectionInner}>
                                     <FontAwesome name="credit-card" size={40} color="#777" />
                                     <Text style={styles.txt1}>After clicking "Complete order", you will be redirected to Online payment page to complete your purchase securely.</Text>
                                 </View>
-                            ): null}
+                            )}
                             
                             <View style={styles.left}>
-                                <RadioButton value={true} />
+                                <RadioButton value='COD' />
                                 <Text style={styles.txt3}>Cash on delivery</Text>
                             </View>
-                            {cod ? (
+                            {paymentMode == 'COD' && (
                                 <View style={styles.sectionInner}>
                                     <FontAwesome name="credit-card" size={40} color="#777" />
                                     <Text style={styles.txt1}>After clicking "Complete order", you will be redirected to Cash on deliver page to complete your purchase securely.</Text>
                                 </View>
-                            ): null}
+                            )}
                         </RadioButton.Group>
                     </View>
                 </View>
@@ -205,110 +190,9 @@ const Payment = ({nav}) => {
                 <View style={[styles.section, {padding: 0}]}>
                     <RadioButton.Group onValueChange={newValue => setBillingAddress(newValue)} value={billingAddress}>
                         <View style={[styles.left, {borderBottomWidth: 0.8, borderColor: '#999'}]}>
-                            <RadioButton value={false} />
+                            <RadioButton value="sameAsBilingAddress" />
                             <Text style={styles.txt3}>Same as shipping address</Text>
                         </View>
-                        <View style={styles.left}>
-                            <RadioButton value={true} />
-                            <Text style={styles.txt3}>Use a different billing address</Text>
-                        </View>
-                        {billingAddress ? (
-                             <View>
-                                 <View style={styles.inputWrapper}>
-                                    <Text style={styles.inputTxt}>Saved Address</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        value={savedAddress}
-                                        placeholder="Enter your full address"
-                                        onChangeText={text => setSavedAddress(text)}
-                                    />
-                                </View>
-                                 <View style={styles.inputWrapper}>
-                                    <Text style={styles.inputTxt}>First Name</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        value={firstName}
-                                        placeholder="Enter your first name"
-                                        onChangeText={text => setFirstName(text)}
-                                    />
-                                </View>
-                                <View style={styles.inputWrapper}>
-                                    <Text style={styles.inputTxt}>Last Name</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        value={lastName}
-                                        placeholder="Enter your last name"
-                                        onChangeText={text => setLastName(text)}
-                                    />
-                                </View>
-                                <View style={styles.inputWrapper}>
-                                    <Text style={styles.inputTxt}>Email</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        value={email}
-                                        placeholder="Enter your Email"
-                                        onChangeText={text => setEmail(text)}
-                                    />
-                                </View>
-                                <View style={styles.inputWrapper}>
-                                    <Text style={styles.inputTxt}>Phone number</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        value={phoneNo}
-                                        keyboardType="number-pad"
-                                        placeholder="Enter your phone no"
-                                        onChangeText={text => setPhoneNo(text)}
-                                    />
-                                </View>
-                                <View style={styles.inputWrapper}>
-                                    <Text style={styles.inputTxt}>Landmart</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        value={landmark}
-                                        placeholder="Enter your landmark"
-                                        onChangeText={text => setLandmark(text)}
-                                    />
-                                </View>
-                                <View style={styles.inputWrapper}>
-                                    <Text style={styles.inputTxt}>City</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        value={city}
-                                        placeholder="Enter your city"
-                                        onChangeText={text => setCity(text)}
-                                    />
-                                </View>
-                                <View style={styles.inputWrapper}>
-                                    <Text style={styles.inputTxt}>State</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        value={state}
-                                        placeholder="Enter your state"
-                                        onChangeText={text => setState(text)}
-                                    />
-                                </View>
-                                <View style={styles.inputWrapper}>
-                                    <Text style={styles.inputTxt}>Pincode</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        value={pincode}
-                                        keyboardType="numeric"
-                                        placeholder="Enter your Pincode"
-                                        onChangeText={text => setPincode(text)}
-                                    />
-                                </View>
-                                <View style={styles.inputWrapper}>
-                                    <Text style={styles.inputTxt}>Country</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        value={country}
-                                        placeholder="Enter your country"
-                                        onChangeText={text => setCountry(text)}
-                                    />
-                                </View>
-                         </View>
-                        ): null}
-                       
                     </RadioButton.Group>
                 </View>
 
@@ -340,6 +224,8 @@ const Payment = ({nav}) => {
                     <Text style={styles.txtBtn1}>Terms of Service </Text>
                 </TouchableOpacity>
             </View>
+            </>
+            )}
         </View>
     )
 }

@@ -3,9 +3,17 @@ import {applyMiddleware, compose, createStore} from 'redux';
 import thunk from 'redux-thunk';
 import rootReducer from './rootReducer'
 
-AsyncStorage.getItem("CartItem").then(val => console.log(val))
 
-const initialState = {
+// const fn = async () => {
+//     const obj = {
+//         data: await AsyncStorage.getItem("CartItem")
+//     }
+//     return obj
+// }
+
+// console.log("Data", fn())
+
+var initialState = {
     // addToCart: {
     //     cart: 
     // }

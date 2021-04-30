@@ -20,6 +20,7 @@ const ProfileSetting = () => {
   const editProfileReducer = useSelector(state => state.editProfile);
   const {loading, editedData, editedError} = editProfileReducer;
 
+  const [loggedin, setLoggedIn] = useState(false)
   const [user, setUser] = useState({
     name: '',
     email: '',
@@ -75,6 +76,7 @@ const ProfileSetting = () => {
   useEffect(async () => {
     const item = await AsyncStorage.getItem('User');
     if (item) {
+      setLoggedIn(true)
       const item1 = JSON.parse(item);
       const {name, email, token} = item1;
       const {gender, phone, busniusename, licencecode} = item1.profile;
@@ -117,7 +119,7 @@ const ProfileSetting = () => {
 
   return (
     <View style={styles.contanier}>
-      {Object.keys(user).length ? (
+      {loggedin ? (
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={styles.top}>
             <View style={styles.imgWrapper}>

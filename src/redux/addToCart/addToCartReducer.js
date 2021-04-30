@@ -4,6 +4,7 @@ import {
     INCREASE_QTY,
     DECREASE_QTY,
     RESET_AND_ADD,
+    EMPTY_CART,
 } from './addToCartTypes'
 
 const initialState = { 
@@ -13,13 +14,17 @@ const initialState = {
 const addToCartReducer = (state=initialState, action) => {
     switch(action.type) {
         case RESET_AND_ADD: 
-            return {
+            return { 
                 cart: action.payload
             }
         case ADD_TO_CART:
             return {
                 cart: [...state.cart, action.payload]
             };
+        case EMPTY_CART: 
+            return {
+                cart: []
+            }
         case REMOVE_FROM_CART:
             const product2 = state.cart.find(prod => prod.id == action.payload.pId)
             const index = state.cart.findIndex(p => p.id == product2.id)

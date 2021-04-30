@@ -10,13 +10,16 @@ const Profile = () => {
 
   useEffect(async () => {
     const userData = await AsyncStorage.getItem('User');
-    setUser(JSON.parse(userData));
-    console.log('Profile: ', user);
+    if(userData !== null){
+      setUser(JSON.parse(userData));
+      console.log('Profile: ', user);
+    }
   }, []);
 
   return (
     <View style={styles.container}>
-      <ScrollView>
+      {Object.keys(user).length > 0 ? (
+        <ScrollView>
         <View style={styles.topSection}>
           <LinearGradient
             colors={['#00dd00', '#002200']}
@@ -96,6 +99,8 @@ const Profile = () => {
           </View>
         )}
       </ScrollView>
+      ) : (<Text>You are not logged in</Text>)}
+      
     </View>
   );
 };

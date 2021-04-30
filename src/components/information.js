@@ -114,7 +114,7 @@ const Information = ({user, cart}) => {
       setSavedAddress(add.address)
       setFirstName(add.firstName)
       setLastName(add.lastName)
-      setEmail(add.contact)
+      setEmail(user.email || add.contact)
       setPhoneNo(add.phone)
       setLandmark(add.nearTo)
       setCity(add.city)
@@ -125,9 +125,9 @@ const Information = ({user, cart}) => {
   }, [])
 
   useEffect(async() => {
-    await AsyncStorage.removeItem("InfoAddress");
+    // await AsyncStorage.removeItem("InfoAddress");
     // console.log(deliveryMethod);
-    // console.log("Cart: ", cart)
+    // console.log("User: ", user)
   }, []);
 
   return (

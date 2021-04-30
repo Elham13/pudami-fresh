@@ -41,6 +41,10 @@ const Home = ({navigation}) => {
   useEffect(() => {
     dispatch(fetchProducts());
   }, [])
+  useEffect(async() => {
+    const all = await AsyncStorage.getAllKeys()
+    console.log("All: ", all)
+  }, [])
 
   return (
     <View style={styles.container}>

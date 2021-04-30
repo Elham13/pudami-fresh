@@ -10,7 +10,7 @@ const createOrder = (order) => {
     return async (dispatch) => { 
         dispatch({type: CREATE_ORDER_REQUEST})
         try {
-            const res = await axios.post(`${baseUrlLocal}/api/orders`, order, {
+            const res = await axios.post(`${baseUrlLocal}/api/orders`, order, { 
                 headers: {
                     'Authorization': `Bearer ${order.token}`
                 }
