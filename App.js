@@ -10,7 +10,7 @@ import { createStore } from 'redux';
 // }
 // const reducer = (state=initialState, action) => {
 //   return state
-// }
+// } 
 
 // const store = createStore(reducer);
 // store.dispatch({type: "INCREMENT"})

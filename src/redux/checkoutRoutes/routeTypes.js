@@ -1,0 +1,3 @@
+export const SHOW_INFORMATION = 'SHOW_INFORMATION';
+export const SHOW_SHIPPING = 'SHOW_SHIPPING';
+export const SHOW_PAYMENT = 'SHOW_PAYMENT';

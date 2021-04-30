@@ -1,53 +1,84 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, {useEffect, useState} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native';
-import { connect, useDispatch, useSelector } from 'react-redux';
+import {connect, useDispatch, useSelector} from 'react-redux';
+import { addToCart } from '../redux/addToCart/addToCartActions';
 
-const itemsList = ({addToCart, itemName, price, buyLimit, id}) => {
-  const [added, setAdded] = useState(false);
+const itemsList = ({itemName, price, photo, buyLimit, id}) => {
   const [total, setTotal] = useState(0);
   const [limit, setLimit] = useState(buyLimit);
 
   const dispatch = useDispatch();
-
-  useEffect(() => {
-  }, [added])
+  const addToCartReducer = useSelector(state => state.addToCart);
+  const {cart} = addToCartReducer;
 
   const handleAddtoCart = () => {
-    setTotal(price * limit)
-    setAdded(true);
-    addToCart();
+    setLimit(buyLimit);
+    setTotal(price * limit);
+
+    const addedProd = { 
+      id: id,
+      name: itemName,
+      price: price,
+      qty: buyLimit,
+      totalPrice: price * limit,
+      // image: photo,
+      image: 'Some image'
+    };
+    dispatch(addToCart(addedProd))
   };
 
   const increase = () => {
     setLimit(limit + buyLimit);
-    setTotal((limit + buyLimit) * price )
-  }
+    setTotal((limit + buyLimit) * price);
+    const incrementData = {
+      pId: id,
+      increseLimit: buyLimit,
+    };
 
-  const decrease = () => {
-    if(limit == 0){
-        setTotal(0);
-        setLimit(0);
-        setAdded(false)
-    }else{
-        setLimit(limit - buyLimit);
-        setTotal((limit - buyLimit) * price);
+    dispatch({type: 'INCREASE_QTY', payload: incrementData});
+  };
+
+  const decrease = async () => {
+    const decrementData = {
+      pId: id,
+      decreseLimit: buyLimit,
+    };
+
+    if (limit == buyLimit) {
+      setTotal(0);
+      // const product = cart.find(prod => prod.id == id)
+      // const index = cart.findIndex(p => p.id == product.id)
+      // cart.splice(index, 1)
+      // await AsyncStorage.setItem("CartItem", JSON.stringify(cart));
+      dispatch({type: 'REMOVE_FROM_CART', payload: decrementData});
+    } else {
+      setLimit(limit - buyLimit);
+      setTotal((limit - buyLimit) * price);
+      dispatch({type: 'DECREASE_QTY', payload: decrementData});
     }
-  }
-  
+  };
+
   useEffect(() => {
-    if(limit == 0){
-        setTotal(0);
-        setLimit(0);
-        setAdded(false)
+    if (limit == 0) {
+      setTotal(0);
+      setLimit(0);
     }
   }, [limit]);
+
+  useEffect(async() => {
+    console.log("Cart: ", cart);
+  }, [cart]);
 
   return (
     <View style={styles.section}>
       <View style={styles.grid}>
         <View style={styles.left}>
           <TouchableOpacity>
-            <Image style={styles.img} source={require('../assets/pudami-logo.jpeg')} />
+            <Image
+              style={styles.img}
+              source={{uri: photo}}
+            />
           </TouchableOpacity>
           <View style={styles.txtWrapper}>
             <Text style={styles.name}>{itemName}</Text>
@@ -56,32 +87,56 @@ const itemsList = ({addToCart, itemName, price, buyLimit, id}) => {
           </View>
         </View>
         <View style={styles.right}>
-          {added ? (
-            <View style={styles.btnWrapper}>
-              <TouchableOpacity onPress={decrease} style={[ styles.btn, {borderTopLeftRadius: 10, borderBottomLeftRadius: 10}, ]}>
-                <Text style={styles.btnTxt}>&ndash;</Text>
-              </TouchableOpacity>
-              <Text style={styles.txtMiddle}>{limit}</Text>
-              <TouchableOpacity onPress={increase} style={[styles.btn, {borderTopRightRadius: 10, borderBottomRightRadius: 10},]}>
-                <Text style={styles.btnTxt}>+</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity style={styles.btnWrapper} onPress={handleAddtoCart}>
+          {cart.length > 0 ? (
+            <View>
+              {cart.find(p => p.id == id) !== undefined ? (
+                <View style={styles.btnWrapper}>
+                  <TouchableOpacity
+                    onPress={decrease}
+                    style={[
+                      styles.btn,
+                      {borderTopLeftRadius: 10, borderBottomLeftRadius: 10},
+                    ]}>
+                    <Text style={styles.btnTxt}>&ndash;</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.txtMiddle}>{limit}</Text>
+                  <TouchableOpacity
+                    onPress={increase}
+                    style={[
+                      styles.btn,
+                      {borderTopRightRadius: 10, borderBottomRightRadius: 10},
+                    ]}>
+                    <Text style={styles.btnTxt}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.btnWrapper}
+                  onPress={handleAddtoCart}>
                   <View style={styles.inner}>
                     <Text style={styles.innerTxt}>Add</Text>
                   </View>
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.btnWrapper}
+              onPress={handleAddtoCart}>
+              <View style={styles.inner}>
+                <Text style={styles.innerTxt}>Add</Text>
+              </View>
             </TouchableOpacity>
           )}
-        </View> 
+        </View>
       </View>
     </View>
   );
 };
 
-const mapStateToProps = (state) => ({
-    count: state.count
-})
+const mapStateToProps = state => ({
+  count: state.count,
+});
 export default connect(mapStateToProps)(itemsList);
 
 const styles = StyleSheet.create({
@@ -152,11 +207,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   inner: {
-      paddingVertical: 7,
-      paddingHorizontal: 45,
+    paddingVertical: 7,
+    paddingHorizontal: 45,
   },
   innerTxt: {
-      color: '#333',
-      fontSize: 12,
-  }
+    color: '#333',
+    fontSize: 12,
+  },
 });

@@ -1,76 +1,93 @@
-import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Dimensions } from 'react-native'
-import LinearGradient from 'react-native-linear-gradient';
-import { data } from '../utils/dumyData';
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Dimensions,
+  ActivityIndicator,
+} from 'react-native';
+import {useDispatch, useSelector} from 'react-redux';
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import fetchProducts from '../redux/products/productActions';
 import ItemsList from '../components/itemsList';
 
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
 const Home = ({navigation}) => {
-    const [changed, setChanged] = useState(false);
-    const [addToCart, setAddToCart] = useState([]);
+  const dispatch = useDispatch();
+  const productsReducer = useSelector(state => state.products);
+  const {error, loading, products} = productsReducer;
 
-    const handleChange = () => {
-        setChanged(true);
-    };
+  const addToCartReducer = useSelector(state => state.addToCart)
+  const {cart} = addToCartReducer;
 
-    const handleInput = (data) => {
-        setAddToCart(prevState => [...prevState,  data]);
-    }
+  const handleAddToCart = () => {
+    navigation.navigate('Cart');
+  };
 
-    const handleAddToCart = () => {
-        navigation.navigate("Cart");
-    }
+  // useEffect(async () => {
+  //     const cartItems = await AsyncStorage.getItem("CartItem")
+  //     if(cartItems){
+  //       console.log("cart: ", cartItems)
+  //       const cartItems1 = JSON.parse(cartItems)
+  //       if(cart.length == 0 && cartItems1.length !== 0){
+  //         dispatch({type: 'RESET_AND_ADD', payload: cartItems1})
+  //       }
+  //     }
+  // }, [addToCartReducer]);
 
-    // useEffect(() => {
-    // }, [addToCart]);
+  useEffect(() => {
+    dispatch(fetchProducts());
+  }, [])
 
-    return (
-        <View style={styles.container}>
-            <ItemsList addToCart={handleChange} getData={handleInput} itemName="Onion" price={120} buyLimit={50} id={1} />
-            <ItemsList addToCart={handleChange} getData={handleInput} itemName="Garlic" price={200} buyLimit={10} id={2} />
-            <ItemsList addToCart={handleChange} getData={handleInput} itemName="Ginger" price={250} buyLimit={10} id={3} />
-            <ItemsList addToCart={handleChange} getData={handleInput} itemName="Potato" price={130} buyLimit={10} id={4} />
+  return (
+    <View style={styles.container}>
+      {loading ? (
+          <ActivityIndicator size='large' color="#ff0000" />
+      ) : error ? (<Text>{error}</Text>) : (
+         <FlatList  
+            data={products}
+            keyExtractor={(item) => item._id}
+            showsVerticalScrollIndicator={false}
+            renderItem={({item}) => (
+                <ItemsList 
+                    itemName={item.name}
+                    price={item.price} 
+                    photo={item.image}
+                    buyLimit={item.orderLimit}
+                    id={item._id}
+                />
+            )}
+         />
+      )}
 
-            {changed ? (
-                <View style={styles.btnWrapper}>
-                    <TouchableOpacity style={[styles.btn, {backgroundColor: '#fff'}]}>
-                        <Text style={styles.txt}>Buy Now</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={handleAddToCart} style={[styles.btn, {width: 236}]}>
-                        <Text style={[styles.txt, {color: '#fff'}]}>Add To Cart</Text>
-                    </TouchableOpacity>
-                </View>
-            ): null}
+      {cart.length ? (
+          <TouchableOpacity
+            onPress={handleAddToCart}
+            style={styles.btn}>
+            <Text style={[styles.txt, {color: '#fff'}]}>Buy now</Text>
+          </TouchableOpacity>
+      ) : null}
+    </View>
+  );
+};
 
-        </View>
-    )
-}
-
-export default Home
+export default Home;
 
 const styles = StyleSheet.create({
-    container: {
-        backgroundColor: '#ddd',
-        flex: 1,
-    },
-    btnWrapper: {
-        paddingVertical: 5,
-        position: 'absolute',
-        width: windowWidth,
-        bottom: 0,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 10
-    },
-    btn: {
-        backgroundColor: '#039646',
-        paddingHorizontal: 20,
-        paddingVertical: 5,
-        alignItems: 'center',
-    },
-    txt: {
-        fontWeight: '700',
-    }
-})
+  container: {
+    backgroundColor: '#ddd',
+    flex: 1,
+  },
+  btn: {
+    backgroundColor: '#039646',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  txt: {
+    fontWeight: '700',
+  },
+});

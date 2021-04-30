@@ -1,43 +1,137 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Image, Dimensions, ScrollView } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Image, Dimensions, TextInput, Alert } from 'react-native'
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import PhoneInput from "react-native-phone-number-input";
-import { useDispatch } from 'react-redux'
-import { Divider, RadioButton, TextInput } from 'react-native-paper';
+import { useDispatch, useSelector } from 'react-redux'
+import { Divider, RadioButton} from 'react-native-paper';
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import RazorpayCheckout from 'react-native-razorpay';
+import {TEST_KEY_ID, TEST_KEY_SECRET} from '../utils/razorpay'
+import razorpayRequest from '../redux/orders/razorpayRequestAction'
 
 const windowWidth = Dimensions.get('window').width;
 
-const Payment = () => {
+const Payment = ({nav}) => {
 
-    const [phoneValue, setPhoneValue] = useState("9346240703");
+    const addToCartReducer = useSelector(state => state.addToCart);
+    const {cart} = addToCartReducer;
+    const razorPayReducer = useSelector(state => state.razorpay)
+    const {razorpayLoading, razorpayData, razorpayError} = razorPayReducer;
+
     const [cod, setCOD] = useState(false);
     const [billingAddress, setBillingAddress] = useState(false);
+    const [savedAddress, setSavedAddress] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [email, setEmail] = useState('');
+    const [landmark, setLandmark] = useState('');
+    const [city, setCity] = useState('');
+    const [country, setCountry] = useState('');
+    const [state, setState] = useState('');
+    const [pincode, setPincode] = useState('');
+    const [phoneNo, setPhoneNo] = useState('');
+    const [fullOrderInfo, setFullOrderInfo] = useState({});
 
-    const [savedAddress, setSavedAddress] = useState('Banjara Hills, Roud no 12, Global naila, 500034, Hyderabad TS, India');
-    const [firstName, setFirstName] = useState('Elhamuddin');
-    const [lastName, setLastName] = useState('Mahmoodi');
-    const [address, setAddress] = useState('Banjara Hills');
-    const [apartment, setApartment] = useState('Global naila');
-    const [city, setCity] = useState('Hyderabad');
-    const [country, setCountry] = useState('India');
-    const [state, setState] = useState('Telangana');
-    const [pincode, setPincode] = useState('500034');
-    const [phoneNo, setPhoneNo] = useState('9346240703');
+    const infoClickHandler = () => dispatch({ type: "SHOW_INFORMATION" })
+    const shippingClickHandler = () => dispatch({type: 'SHOW_SHIPPING'})
+
+    const getTotal = products => {
+        let total = 0;
+        products.map(p => {
+          total += p.totalPrice;
+        });
+        return total;
+    };
+
+    const paymentHandler = async () => {
+        if(Object.keys(fullOrderInfo).length){
+            const updatedOrderInfo = {
+                ...fullOrderInfo,
+                informationAddress: {
+                    contact: email,
+                    firstName: firstName,
+                    lastName: lastName,
+                    address: savedAddress,
+                    nearTo: landmark,
+                    city: city,
+                    state: state,
+                    pincode: pincode,
+                    country: country,
+                    phone: phoneNo,
+                }
+            }
+            try {
+                await AsyncStorage.setItem("OrderInfo", JSON.stringify(updatedOrderInfo))
+            } catch (error) {
+                console.log(error.message)
+            }
+        }
+
+        dispatch(razorpayRequest())
+        Alert.alert("Rdirecting to pyament", "You will be redirected to payment now!", [{text: "Okay", onPress:() => openRazorPay()}])
+        
+    }
+    
+    const openRazorPay = () => {
+        // Payment
+            const  options = {
+                image: 'https://i.imgur.com/3g7nmJC.png',
+                name: 'Fresh Vegitables', 
+                description: 'Happy shopping with Pudami Fresh',
+                amount: razorpayData.amount,
+                currency: razorpayData.amount.currency,
+                order_id: razorpayData.id,
+                key: TEST_KEY_ID,
+                prefill: {
+                  email: 'wolverine.elham@gmail.com',
+                  contact: '919346240703',
+                  name: 'Elhamuddin Mahmoodin'
+                },
+                theme: {color: '#039646'}
+              }
+    
+            RazorpayCheckout.open(options).then((data) => {
+            // handle success
+            alert(`Payment was successfull: ${data.razorpay_payment_id}`);
+            }).catch((error) => {
+            // handle failure
+            alert(`Error: ${error.code} | ${error.description}`);
+            });
+    }
 
     const dispatch = useDispatch();
     const handleShippingClick = () => {
         dispatch({ type: "SHOW_INFORMATION" })
     }
 
+    useEffect(async() => {
+        const orderInfo = await AsyncStorage.getItem("OrderInfo")
+        if(orderInfo){
+            console.log(orderInfo);
+            const orderInfo1 = JSON.parse(orderInfo)
+            setFullOrderInfo(orderInfo1)
+            const add = orderInfo1.informationAddress
+            setSavedAddress(add.address)
+            setFirstName(add.firstName)
+            setLastName(add.lastName)
+            setEmail(add.contact)
+            setPhoneNo(add.phone)
+            setLandmark(add.nearTo)
+            setCity(add.city)
+            setState(add.state)
+            setPincode(add.pincode)
+            setCountry(add.country)
+        }
+    }, [])
+
     return (
         <View>
             <View style={styles.information}>
                 <View style={styles.info1}>
-                    <TouchableOpacity onPress={() => dispatch({ type: 'SHOW_INFORMATION' })}>
+                    <TouchableOpacity onPress={infoClickHandler}>
                         <Text style={styles.txt1}>Information</Text>
                     </TouchableOpacity>
                     <FontAwesome name="angle-right" size={16} color="#555" />
-                    <TouchableOpacity onPress={() => dispatch({ type: 'SHOW_SHIPPING' })}>
+                    <TouchableOpacity onPress={shippingClickHandler}>
                         <Text style={styles.txt1}>Shipping</Text>
                     </TouchableOpacity>
                     <FontAwesome name="angle-right" size={16} color="#555" />
@@ -51,7 +145,7 @@ const Payment = () => {
                             <Text style={styles.txtBtn}>Change</Text>
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.txt3}>wolverine.elham@gmail.com</Text>
+                    <Text style={styles.txt3}>{email}</Text>
                     <Divider style={styles.divider} />
                     <View style={styles.infoInner1}>
                         <Text style={styles.txt2}>Ship to</Text>
@@ -59,7 +153,7 @@ const Payment = () => {
                             <Text style={styles.txtBtn}>Change</Text>
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.txt3}>Banjara Hills, Road no 12, Global naila, 500034, Hyderabad TS, India</Text>
+                    <Text style={styles.txt3}>{savedAddress}</Text>
                     <Divider style={styles.divider} />
                     <View style={styles.infoInner1}>
                         <Text style={styles.txt2}>Method</Text>
@@ -120,96 +214,98 @@ const Payment = () => {
                         </View>
                         {billingAddress ? (
                              <View>
-                             <TextInput
-                                 label="Saved address"
-                                 value={savedAddress}
-                                 onChangeText={text => setSavedAddress(text)}
-                                 selectionColor="#039646"
-                                 underlineColor="#039646"
-                                 style={styles.input1}
-                                 mode="outlined"
-                             />
-                             <TextInput
-                                 label="First name"
-                                 value={firstName}
-                                 onChangeText={text => setFirstName(text)}
-                                 selectionColor="#039646"
-                                 underlineColor="#039646"
-                                 style={styles.input1}
-                                 mode="outlined"
-                             />
-                             <TextInput
-                                 label="Last name"
-                                 value={lastName}
-                                 onChangeText={text => setLastName(text)}
-                                 selectionColor="#039646"
-                                 underlineColor="#039646"
-                                 style={styles.input1}
-                                 mode="outlined"
-                             />
-                             <TextInput
-                                 label="Address"
-                                 value={address}
-                                 onChangeText={text => setAddress(text)}
-                                 selectionColor="#039646"
-                                 underlineColor="#039646"
-                                 style={styles.input1}
-                                 mode="outlined"
-                             />
-                             <TextInput
-                                 label="Apartment, suite, etc."
-                                 value={apartment}
-                                 onChangeText={text => setApartment(text)}
-                                 selectionColor="#039646"
-                                 underlineColor="#039646"
-                                 style={styles.input1}
-                                 mode="outlined"
-                             />
-                             <TextInput
-                                 label="City"
-                                 value={city}
-                                 onChangeText={text => setCity(text)}
-                                 selectionColor="#039646"
-                                 underlineColor="#039646"
-                                 style={styles.input1}
-                                 mode="outlined"
-                             />
-                             <TextInput
-                                 label="Country/Region"
-                                 value={country}
-                                 onChangeText={text => setCountry(text)}
-                                 selectionColor="#039646"
-                                 underlineColor="#039646"
-                                 style={styles.input1}
-                                 mode="outlined"
-                             />
-                             <TextInput
-                                 label="State"
-                                 value={state}
-                                 onChangeText={text => setState(text)}
-                                 selectionColor="#039646"
-                                 underlineColor="#039646"
-                                 style={styles.input1}
-                                 mode="outlined"
-                             />
-                             <TextInput
-                                 label="PIN code"
-                                 value={pincode}
-                                 onChangeText={text => setPincode(text)}
-                                 selectionColor="#039646"
-                                 underlineColor="#039646"
-                                 style={styles.input1}
-                                 mode="outlined"
-                             />
-                             <TextInput
-                                 label="Phone no for updates and exclusive offers"
-                                 value={phoneNo}
-                                 onChangeText={text => setPhoneNo(text)}
-                                 selectionColor="#039646"
-                                 underlineColor="#039646"
-                                 style={styles.input1}
-                                 mode="outlined"
-                             />
+                                 <View style={styles.inputWrapper}>
+                                    <Text style={styles.inputTxt}>Saved Address</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={savedAddress}
+                                        placeholder="Enter your full address"
+                                        onChangeText={text => setSavedAddress(text)}
+                                    />
+                                </View>
+                                 <View style={styles.inputWrapper}>
+                                    <Text style={styles.inputTxt}>First Name</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={firstName}
+                                        placeholder="Enter your first name"
+                                        onChangeText={text => setFirstName(text)}
+                                    />
+                                </View>
+                                <View style={styles.inputWrapper}>
+                                    <Text style={styles.inputTxt}>Last Name</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={lastName}
+                                        placeholder="Enter your last name"
+                                        onChangeText={text => setLastName(text)}
+                                    />
+                                </View>
+                                <View style={styles.inputWrapper}>
+                                    <Text style={styles.inputTxt}>Email</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={email}
+                                        placeholder="Enter your Email"
+                                        onChangeText={text => setEmail(text)}
+                                    />
+                                </View>
+                                <View style={styles.inputWrapper}>
+                                    <Text style={styles.inputTxt}>Phone number</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={phoneNo}
+                                        keyboardType="number-pad"
+                                        placeholder="Enter your phone no"
+                                        onChangeText={text => setPhoneNo(text)}
+                                    />
+                                </View>
+                                <View style={styles.inputWrapper}>
+                                    <Text style={styles.inputTxt}>Landmart</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={landmark}
+                                        placeholder="Enter your landmark"
+                                        onChangeText={text => setLandmark(text)}
+                                    />
+                                </View>
+                                <View style={styles.inputWrapper}>
+                                    <Text style={styles.inputTxt}>City</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={city}
+                                        placeholder="Enter your city"
+                                        onChangeText={text => setCity(text)}
+                                    />
+                                </View>
+                                <View style={styles.inputWrapper}>
+                                    <Text style={styles.inputTxt}>State</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={state}
+                                        placeholder="Enter your state"
+                                        onChangeText={text => setState(text)}
+                                    />
+                                </View>
+                                <View style={styles.inputWrapper}>
+                                    <Text style={styles.inputTxt}>Pincode</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={pincode}
+                                        keyboardType="numeric"
+                                        placeholder="Enter your Pincode"
+                                        onChangeText={text => setPincode(text)}
+                                    />
+                                </View>
+                                <View style={styles.inputWrapper}>
+                                    <Text style={styles.inputTxt}>Country</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={country}
+                                        placeholder="Enter your country"
+                                        onChangeText={text => setCountry(text)}
+                                    />
+                                </View>
                          </View>
                         ): null}
                        
@@ -218,7 +314,7 @@ const Payment = () => {
 
             </View>
 
-            <TouchableOpacity style={styles.payBtn} >
+            <TouchableOpacity style={styles.payBtn} onPress={paymentHandler} >
                 <Text style={{ color: '#fff' }}>Complete order</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.btn} onPress={() => dispatch({type: 'SHOW_SHIPPING'})}>
@@ -341,4 +437,23 @@ const styles = StyleSheet.create({
         color: '#039646',
         fontSize: 9,
     },
+    inputWrapper: {
+        marginTop: 20,
+      },
+      inputTxt: {
+        position: 'absolute',
+        backgroundColor: '#fff',
+        top: -12,
+        left: 17,
+        zIndex: 1,
+        paddingHorizontal: 5,
+        fontWeight: '700',
+        fontSize: 12,
+      },
+      input: {
+        borderWidth: 1,
+        padding: 10,
+        borderRadius: 20,
+        borderColor: '#039646',
+      },
 })

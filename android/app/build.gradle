@@ -153,6 +153,12 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            storeFile file('pudami_fresh_key.keystore')
+            storePassword '123456'
+            keyAlias 'pudami_fresh'
+            keyPassword '123456'
+        }
     }
     buildTypes {
         debug {

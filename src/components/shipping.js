@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Image, Dimensions, TextInput, ScrollView } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, TextInput, Alert,} from 'react-native'
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import PhoneInput from "react-native-phone-number-input";
 import { useDispatch } from 'react-redux'
 import { Divider } from 'react-native-paper';
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 
 const windowWidth = Dimensions.get('window').width;
@@ -12,45 +12,80 @@ const windowHeight = Dimensions.get('window').height;
 const Shipping = () => {
 
     const [phoneValue, setPhoneValue] = useState("9346240703");
+    const [instruction, setInstruction] = useState("");
+    const [addressState, setAdderssState] = useState({});
+    const [fullOrderInfo, setFullOrderInfo] = useState({});
     const dispatch = useDispatch();
 
-    const handleShippingClick = () => {
-        dispatch({ type: "SHOW_INFORMATION" })
+    const infoClickHandler = () => dispatch({ type: "SHOW_INFORMATION" })
+    const paymentClickHandler = () => dispatch({ type: 'SHOW_PAYMENT' })
+
+    const handleSubmit = async() => {
+        if(!phoneValue.length){
+            Alert.alert("Empty input", "Please enter your phone number", [{text: 'Okay'}])
+        }else{
+            const updatedOrderInfo = {
+                ...fullOrderInfo,
+                shippingAddress: {
+                    contact: addressState.contact,
+                    shipIn: addressState.address,
+                    phone: phoneValue,
+                    instruction: instruction
+                }
+            }
+            try {
+                await AsyncStorage.setItem("OrderInfo", JSON.stringify(updatedOrderInfo));
+            } catch (error) {
+                console.log(error)
+            }
+            dispatch({type: 'SHOW_PAYMENT'})
+        }
     }
 
-    useEffect(() => {
+    useEffect(async() => {
+        const infoAdd = await AsyncStorage.getItem('OrderInfo');
+        if(infoAdd){
+            const infoadd1 = JSON.parse(infoAdd)
+            setFullOrderInfo(infoadd1)
+            const address = infoadd1.informationAddress
+            setAdderssState(address)
+            setPhoneValue(address.phone)
+            if(infoadd1.shippingAddress.hasOwnProperty("instraction")){
+                setInstruction(infoadd1.shippingAddress.instruction)
+            }
+        }
     }, [])
 
     return (
         <View>
             <View style={styles.information}>
                 <View style={styles.info1}>
-                    <TouchableOpacity onPress={() => dispatch({ type: 'SHOW_INFORMATION' })}>
+                    <TouchableOpacity onPress={infoClickHandler}>
                         <Text style={styles.txt1}>Information</Text>
                     </TouchableOpacity>
                     <FontAwesome name="angle-right" size={16} color="#555" />
                     <Text style={[styles.txt1, { color: "#039646" }]}>Shipping</Text>
                     <FontAwesome name="angle-right" size={16} color="#555" />
-                    <TouchableOpacity onPress={() => dispatch({ type: 'SHOW_PAYMENT' })}>
+                    <TouchableOpacity onPress={paymentClickHandler}>
                         <Text style={styles.txt1}>Payment</Text>
                     </TouchableOpacity>
                 </View>
                 <View style={styles.info2}>
                     <View style={styles.infoInner1}>
                         <Text style={styles.txt2}>Contact</Text>
-                        <TouchableOpacity onPress={handleShippingClick}>
+                        <TouchableOpacity onPress={infoClickHandler}>
                             <Text style={styles.txtBtn}>Change</Text>
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.txt3}>wolverine.elham@gmail.com</Text>
+                    <Text style={styles.txt3}>{addressState.contact}</Text>
                     <Divider style={styles.divider} />
                     <View style={styles.infoInner1}>
                         <Text style={styles.txt2}>Ship to</Text>
-                        <TouchableOpacity onPress={handleShippingClick}>
+                        <TouchableOpacity onPress={infoClickHandler}>
                             <Text style={styles.txtBtn}>Change</Text>
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.txt3}>Banjara Hills, Road no 12, Global naila, 500034, Hyderabad TS, India</Text>
+                    <Text style={styles.txt3}>{addressState.address}</Text>
                 </View>
 
                 <Text>Shipping method</Text>
@@ -61,31 +96,31 @@ const Shipping = () => {
                     </View>
                     <Text style={styles.txt4}>Free Home delivery on orders, No minimum order value.</Text>
                     <Divider style={styles.divider} />
-                    <PhoneInput
-                        // ref={phoneInput}
-                        defaultValue={phoneValue}
-                        defaultCode="IN"
-                        onChangeFormattedText={(text) => {
-                            setPhoneValue(text);
-                        }}
-                        withDarkTheme
-                        withShadow
-                        autoFocus
-                        layout="first"
-                        containerStyle={styles.textInputStyle}
-                        textInputStyle={styles.textInputStyle}
-                        codeTextStyle={styles.codeTextStyle}
-                    />
+                    <View style={styles.inputWrapper}>
+                        <Text style={styles.inputTxt}>Phone number</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={phoneValue}
+                            keyboardType="number-pad"
+                            placeholder="Enter your phone number"
+                            onChangeText={text => setPhoneValue(text)}
+                        />
+                    </View>
                     <Text style={styles.txt4}>We may use your phone number to call or text you about your delivery</Text>
-                    <TextInput
-                        placeholder="Deliver instructions (optional)"
-                        style={styles.input}
-                    />
+                    <View style={styles.inputWrapper}>
+                        <Text style={styles.inputTxt}>Delivery Instruction</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={instruction}
+                            placeholder="Delivery instructions if any, (Optional)"
+                            onChangeText={text => setInstruction(text)}
+                        />
+                    </View>
                     <Text style={styles.txt4}>Enter necessary information like door codes or package drop-off instructions</Text>
                 </View>
             </View>
 
-            <TouchableOpacity style={styles.payBtn} onPress={() => dispatch({type: 'SHOW_PAYMENT'})}>
+            <TouchableOpacity style={styles.payBtn} onPress={handleSubmit}>
                 <Text style={{ color: '#fff' }}>Continue to payment</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.btn} onPress={() => dispatch({type: 'SHOW_INFORMATION'})}>
@@ -120,12 +155,22 @@ const styles = StyleSheet.create({
     btn1: {
         marginHorizontal: 10,
     },
+    inputWrapper: {
+        marginTop: 20,
+    },
     txtBtn1: {
         color: '#039646',
         fontSize: 9,
     },
-    links: {
-
+    inputTxt: {
+        position: 'absolute',
+        backgroundColor: '#fff',
+        top: -12,
+        left: 17,
+        zIndex: 1,
+        paddingHorizontal: 5,
+        fontWeight: '700',
+        fontSize: 12,
     },
     btn: {
         flexDirection: 'row',
@@ -142,18 +187,20 @@ const styles = StyleSheet.create({
         marginVertical: 5,
     },
     input: {
-        borderWidth: 0.7,
-        padding: 0,
-        borderRadius: 4,
-        borderColor: '#ccc',
-        marginTop: 10,
-        paddingHorizontal: 10,
+        borderWidth: 1,
+        padding: 10,
+        borderRadius: 20,
+        borderColor: '#039646',
     },
     codeTextStyle: {
-        height: 25,
+        height: 19,
+        fontSize: 12
     },
     textInputStyle: {
         height: 40,
+        fontSize: 12,
+        width: '100%',
+        elevation: 0,
     },
     txt4: {
         fontSize: 10,

@@ -1,8 +1,33 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { View, StyleSheet, Text, TouchableOpacity, Image } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { useDispatch, useSelector } from 'react-redux';
 
 const DrawerContent = ({ navigation }) => {
+    const dispatch = useDispatch();
+    const registerReducer = useSelector(state => state.register)
+    const {loading, userData, userError} = registerReducer
+
+    const [userState, setUserState] = useState({});
+    
+    const getUser = () => {
+        AsyncStorage.getItem("User").then(user => {
+            if(user !== null) setUserState(JSON.parse(user))
+        })
+    }
+
+    const loginHandler = async () => {
+        if(Object.keys(userState).length > 0){
+            await AsyncStorage.removeItem("User");
+            dispatch({type: 'LOGOUT'});
+        }
+        navigation.navigate('Login')
+    }
+    useEffect(() => {
+        // console.log("User: ", getUser())
+        getUser();
+    }, [registerReducer])    
     return (
         <View style={styles.container}>
             <View style={styles.top}>
@@ -10,17 +35,34 @@ const DrawerContent = ({ navigation }) => {
             </View>
             <View style={styles.btnWrapper}>
                 <View style={styles.drawerSection}>
-                    <TouchableOpacity style={styles.drawerNav} onPress={() => navigation.navigate('Cart')}>
+                    <TouchableOpacity style={styles.drawerNav} onPress={() => navigation.navigate("Profile")}>
+                        <View style={styles.navTxtWrapper}>
+                            <MaterialIcons name="circle" size={10} color="#333" />
+                            <Text style={styles.navTxt}>Profile</Text>
+                        </View>
+                        <MaterialIcons name="double-arrow" size={10} color="#333" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.drawerNav} >
                         <View style={styles.navTxtWrapper}>
                             <MaterialIcons name="circle" size={10} color="#333" />
                             <Text style={styles.navTxt}>You Orders</Text>
                         </View>
                         <MaterialIcons name="double-arrow" size={10} color="#333" />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.drawerNav} onPress={() => navigation.navigate('Cart')}>
+                    <TouchableOpacity style={styles.drawerNav} onPress={() => navigation.navigate("Settings")}>
                         <View style={styles.navTxtWrapper}>
                             <MaterialIcons name="circle" size={10} color="#333" />
-                            <Text style={styles.navTxt}>Products</Text>
+                            <Text style={styles.navTxt}>Settings</Text>
+                        </View>
+                        <MaterialIcons name="double-arrow" size={10} color="#333" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.drawerNav} onPress={loginHandler} >
+                        <View style={styles.navTxtWrapper}>
+                            <MaterialIcons name="circle" size={10} color="#333" />
+                            {Object.keys(userState).length > 0 ? 
+                                <Text style={styles.navTxt}>Logout</Text>
+                                :<Text style={styles.navTxt}>Login</Text>
+                            }
                         </View>
                         <MaterialIcons name="double-arrow" size={10} color="#333" />
                     </TouchableOpacity>
