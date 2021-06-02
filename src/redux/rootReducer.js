@@ -9,7 +9,7 @@ import verifyPasswordReducer from './users/verifyPasswordReducer'
 import createOrderReducer from './orders/createOrderReducer'
 import razorPayReducer from './orders/razorpayRequestReducer'
  
-const rootReducer = combineReducers({
+const rootReducer = combineReducers({ 
   products: productReducer,
   route: routeReducer,
   addToCart: addTocartReducer,

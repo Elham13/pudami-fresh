@@ -10,7 +10,7 @@ const initialState = {
     orderError: ''
 }
 
-const createOrderReducer = (state=initialState, action) => {
+const createOrderReducer = (state=initialState, action) => { 
     switch(action.payload){
         case CREATE_ORDER_REQUEST:
             return {

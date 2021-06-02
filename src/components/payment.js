@@ -73,10 +73,10 @@ const Payment = ({nav}) => {
     
             RazorpayCheckout.open(options).then((data) => {
             // handle success
-            dispatch(createOrder(fullOrderInfo)) 
+            dispatch(createOrder(fullOrderInfo))
             dispatch({type: 'EMPTY_CART'})
             nav.navigate("SuccessPayment", {orderInfo: fullOrderInfo});
-            alert(`Payment was successfull: ${data.razorpay_payment_id}`);
+            // alert(`Payment was successfull: ${data.razorpay_payment_id}`);
 
             }).catch((error) => {
             // handle failure

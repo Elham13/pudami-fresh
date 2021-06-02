@@ -5,7 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   Image,
-  TouchableOpacity,
+  TouchableOpacity, 
   Dimensions,
 } from 'react-native';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
@@ -89,7 +89,7 @@ const Checkout = ({route ,navigation}) => {
             <Text style={styles.sumTxt}>&#8377;{totalPrice.toFixed(2)}</Text>
           </TouchableOpacity>
 
-          {showOrder ? (
+          {showOrder ? ( 
             <View style={styles.summary}>
               <View style={styles.section}>
                 {cart.map((cartItem, index) => (

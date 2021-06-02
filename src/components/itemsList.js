@@ -12,7 +12,7 @@ const itemsList = ({itemName, price, photo, buyLimit, id}) => {
   const addToCartReducer = useSelector(state => state.addToCart);
   const {cart} = addToCartReducer;
 
-  const handleAddtoCart = () => {
+  const handleAddtoCart = () => { 
     setLimit(buyLimit);
     setTotal(price * limit);
 
@@ -22,8 +22,7 @@ const itemsList = ({itemName, price, photo, buyLimit, id}) => {
       price: price,
       qty: buyLimit,
       totalPrice: price * limit,
-      // image: photo,
-      image: 'Some image'
+      image: photo,
     };
     dispatch(addToCart(addedProd))
   };
